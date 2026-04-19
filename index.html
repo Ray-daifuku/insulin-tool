@@ -116,7 +116,7 @@
 <body>
   <h1>インスリン・血糖測定・物品計算</h1>
   <div class="note">
-    同一施設でよく使う数値は自動保存されます。患者情報は保存しません。
+    施設設定のみ自動保存されます。患者ごとの入力は保存しません。
   </div>
 
   <div class="card">
@@ -128,30 +128,30 @@
     <div class="grid-5">
       <div class="field">
         <label for="rapidMorning">朝（単位）</label>
-        <input id="rapidMorning" list="units1to200" inputmode="numeric" placeholder="0">
+        <input id="rapidMorning" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
         <label for="rapidNoon">昼（単位）</label>
-        <input id="rapidNoon" list="units1to200" inputmode="numeric" placeholder="0">
+        <input id="rapidNoon" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
         <label for="rapidEvening">夕（単位）</label>
-        <input id="rapidEvening" list="units1to200" inputmode="numeric" placeholder="0">
+        <input id="rapidEvening" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
         <label for="longActing1">眠前 持効型1（単位）</label>
-        <input id="longActing1" list="units1to200" inputmode="numeric" placeholder="0">
+        <input id="longActing1" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
         <label for="longActing2">眠前 持効型2（単位）</label>
-        <input id="longActing2" list="units1to200" inputmode="numeric" placeholder="0">
+        <input id="longActing2" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
     </div>
 
     <div class="grid">
       <div class="field">
         <label for="insulinShots">1日のインスリン施注回数</label>
-        <input id="insulinShots" list="shots1to5" inputmode="numeric" placeholder="自動計算">
+        <input id="insulinShots" list="shots0to5" inputmode="numeric" placeholder="自動計算">
       </div>
       <div class="field">
         <label for="days">処方日数</label>
@@ -164,7 +164,7 @@
       </div>
     </div>
     <div class="small">
-      施注回数は自動反映されますが、必要なら手入力で上書きできます。手入力したあと、朝昼夕眠前を変更すると再び自動計算に戻ります。
+      施注回数は自動反映されますが、必要なら手入力で上書きできます。朝・昼・夕・眠前を変更すると再び自動計算に戻ります。
     </div>
   </div>
 
@@ -195,7 +195,7 @@
     <div class="grid">
       <div class="field">
         <label for="bgChecksPerDay">1日の血糖測定回数</label>
-        <input id="bgChecksPerDay" list="checks1to4" inputmode="numeric" placeholder="1〜4">
+        <input id="bgChecksPerDay" list="checks0to4" inputmode="numeric" placeholder="0〜4" value="2">
       </div>
       <div class="field">
         <label for="alcoholPerDay">アルコール綿1日使用枚数</label>
@@ -203,7 +203,7 @@
       </div>
     </div>
     <div class="small">
-      アルコール綿1日使用枚数 ＝ 1日のインスリン施注回数 ＋ 1日の血糖測定回数 として自動計算します。
+      血糖測定回数の初期値は2回です。必要なら変更できます。アルコール綿1日使用枚数 ＝ 1日のインスリン施注回数 ＋ 1日の血糖測定回数 として自動計算します。
     </div>
   </div>
 
@@ -214,10 +214,11 @@
 
   <div id="result" class="result">ここに結果が表示されます。</div>
 
+  <datalist id="units0to200"></datalist>
   <datalist id="units1to200"></datalist>
   <datalist id="days1to100"></datalist>
-  <datalist id="shots1to5"></datalist>
-  <datalist id="checks1to4"></datalist>
+  <datalist id="shots0to5"></datalist>
+  <datalist id="checks0to4"></datalist>
   <datalist id="unitPerPenList">
     <option value="300"></option>
     <option value="600"></option>
@@ -227,18 +228,10 @@
 
   <script>
     const idsToPersist = [
-      "rapidMorning",
-      "rapidNoon",
-      "rapidEvening",
-      "longActing1",
-      "longActing2",
-      "insulinShots",
-      "days",
       "unitPerPen",
       "bgPerPack",
       "needlePerBox",
-      "alcoholPerBag",
-      "bgChecksPerDay"
+      "alcoholPerBag"
     ];
 
     function generateDatalist(id, start, end) {
@@ -250,10 +243,11 @@
       }
     }
 
+    generateDatalist("units0to200", 0, 200);
     generateDatalist("units1to200", 1, 200);
     generateDatalist("days1to100", 1, 100);
-    generateDatalist("shots1to5", 1, 5);
-    generateDatalist("checks1to4", 1, 4);
+    generateDatalist("shots0to5", 0, 5);
+    generateDatalist("checks0to4", 0, 4);
 
     function toNumber(value) {
       if (value === "" || value == null) return 0;
@@ -295,7 +289,7 @@
       const insulinShots = toNumber(insulinShotsInput.value);
       const bgChecksPerDay = toNumber(document.getElementById("bgChecksPerDay").value);
       const alcoholPerDay = insulinShots + bgChecksPerDay;
-      document.getElementById("alcoholPerDay").value = alcoholPerDay > 0 ? alcoholPerDay : "";
+      document.getElementById("alcoholPerDay").value = alcoholPerDay > 0 ? alcoholPerDay : "0";
     }
 
     function saveValues() {
@@ -313,7 +307,33 @@
       });
     }
 
-    function validateRange(name, value, min, max) {
+    function clearOldPatientInputs() {
+      const oldKeys = [
+        "rapidMorning",
+        "rapidNoon",
+        "rapidEvening",
+        "longActing1",
+        "longActing2",
+        "insulinShots",
+        "days",
+        "bgChecksPerDay"
+      ];
+
+      oldKeys.forEach(id => {
+        localStorage.removeItem("insulin_app_" + id);
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+    }
+
+    function validateRangeAllowZero(name, value, min, max) {
+      if (value < min || value > max) {
+        return `${name}は${min}〜${max}の範囲で入力してください。`;
+      }
+      return null;
+    }
+
+    function validateRangeOptional(name, value, min, max) {
       if (value === 0) return null;
       if (value < min || value > max) {
         return `${name}は${min}〜${max}の範囲で入力してください。`;
@@ -323,7 +343,6 @@
 
     function setDays(n) {
       document.getElementById("days").value = n;
-      saveValues();
     }
 
     function calculate() {
@@ -342,14 +361,14 @@
       const alcoholPerDay = toNumber(document.getElementById("alcoholPerDay").value);
 
       const errors = [
-        validateRange("朝", rapidMorning, 1, 200),
-        validateRange("昼", rapidNoon, 1, 200),
-        validateRange("夕", rapidEvening, 1, 200),
-        validateRange("眠前 持効型1", longActing1, 1, 200),
-        validateRange("眠前 持効型2", longActing2, 1, 200),
-        validateRange("1日のインスリン施注回数", insulinShots, 1, 5),
-        validateRange("処方日数", days, 1, 100),
-        validateRange("1日の血糖測定回数", bgChecksPerDay, 1, 4)
+        validateRangeOptional("朝", rapidMorning, 1, 200),
+        validateRangeOptional("昼", rapidNoon, 1, 200),
+        validateRangeOptional("夕", rapidEvening, 1, 200),
+        validateRangeOptional("眠前 持効型1", longActing1, 1, 200),
+        validateRangeOptional("眠前 持効型2", longActing2, 1, 200),
+        validateRangeAllowZero("1日のインスリン施注回数", insulinShots, 0, 5),
+        validateRangeOptional("処方日数", days, 1, 100),
+        validateRangeAllowZero("1日の血糖測定回数", bgChecksPerDay, 0, 4)
       ].filter(Boolean);
 
       if (days <= 0) errors.push("処方日数を入力してください。");
@@ -430,13 +449,15 @@
     }
 
     function resetInputs() {
-      const keepIds = ["unitPerPen", "bgPerPack", "needlePerBox", "alcoholPerBag"];
-      idsToPersist.forEach(id => {
-        if (!keepIds.includes(id)) {
-          document.getElementById(id).value = "";
-          localStorage.removeItem("insulin_app_" + id);
-        }
-      });
+      document.getElementById("rapidMorning").value = "";
+      document.getElementById("rapidNoon").value = "";
+      document.getElementById("rapidEvening").value = "";
+      document.getElementById("longActing1").value = "";
+      document.getElementById("longActing2").value = "";
+      document.getElementById("insulinShots").value = "";
+      document.getElementById("days").value = "";
+      document.getElementById("bgChecksPerDay").value = "2";
+
       document.getElementById("insulinShots").dataset.userEdited = "false";
       updateAutoFields(true);
       document.getElementById("result").textContent = "ここに結果が表示されます。";
@@ -444,7 +465,6 @@
 
     function handleInsulinPatternChange() {
       updateAutoFields(true);
-      saveValues();
     }
 
     document.getElementById("rapidMorning").addEventListener("input", handleInsulinPatternChange);
@@ -455,30 +475,21 @@
 
     document.getElementById("bgChecksPerDay").addEventListener("input", () => {
       updateAutoFields(false);
-      saveValues();
     });
 
     document.getElementById("insulinShots").addEventListener("input", () => {
       document.getElementById("insulinShots").dataset.userEdited = "true";
       updateAutoFields(false);
-      saveValues();
     });
 
-    idsToPersist.forEach(id => {
-      if (
-        id !== "rapidMorning" &&
-        id !== "rapidNoon" &&
-        id !== "rapidEvening" &&
-        id !== "longActing1" &&
-        id !== "longActing2" &&
-        id !== "bgChecksPerDay" &&
-        id !== "insulinShots"
-      ) {
-        document.getElementById(id).addEventListener("input", saveValues);
-      }
-    });
+    document.getElementById("unitPerPen").addEventListener("input", saveValues);
+    document.getElementById("bgPerPack").addEventListener("input", saveValues);
+    document.getElementById("needlePerBox").addEventListener("input", saveValues);
+    document.getElementById("alcoholPerBag").addEventListener("input", saveValues);
 
+    clearOldPatientInputs();
     loadValues();
+    document.getElementById("bgChecksPerDay").value = "2";
     document.getElementById("insulinShots").dataset.userEdited = "false";
     updateAutoFields(true);
   </script>
