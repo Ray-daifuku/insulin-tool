@@ -128,20 +128,20 @@
   <div class="card">
     <h2>インスリン入力</h2>
     <div class="note">
-      入力していない欄は「打たない」として扱います。
+      入力していない欄は「打たない」として扱います。インスリン本数は、各施注ごとに空打ち2単位を加えて計算します。
     </div>
 
     <div class="grid-5">
       <div class="field">
-        <label for="rapidMorning">速効型 朝（単位）</label>
+        <label for="rapidMorning">即効型 朝（単位）</label>
         <input id="rapidMorning" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
-        <label for="rapidNoon">速効型 昼（単位）</label>
+        <label for="rapidNoon">即効型 昼（単位）</label>
         <input id="rapidNoon" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
-        <label for="rapidEvening">速効型 夕（単位）</label>
+        <label for="rapidEvening">即効型 夕（単位）</label>
         <input id="rapidEvening" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
@@ -178,7 +178,7 @@
     <h2>施設設定</h2>
     <div class="grid-3">
       <div class="field">
-        <label for="rapidUnitPerPen">速効型 1本あたり単位数</label>
+        <label for="rapidUnitPerPen">即効型 1本あたり単位数</label>
         <input id="rapidUnitPerPen" list="perPenList" inputmode="numeric" placeholder="例: 300">
       </div>
       <div class="field">
@@ -246,6 +246,8 @@
       "alcoholPerBag"
     ];
 
+    const AIR_SHOT_UNITS_PER_INJECTION = 2;
+
     function generateDatalist(id, start, end) {
       const list = document.getElementById(id);
       for (let i = start; i <= end; i++) {
@@ -287,6 +289,28 @@
       if (longActing1 > 0) shots += 1;
       if (longActing2 > 0) shots += 1;
 
+      return shots;
+    }
+
+    function calcRapidShotsPerDay() {
+      const rapidMorning = toNumber(document.getElementById("rapidMorning").value);
+      const rapidNoon = toNumber(document.getElementById("rapidNoon").value);
+      const rapidEvening = toNumber(document.getElementById("rapidEvening").value);
+
+      let shots = 0;
+      if (rapidMorning > 0) shots += 1;
+      if (rapidNoon > 0) shots += 1;
+      if (rapidEvening > 0) shots += 1;
+      return shots;
+    }
+
+    function calcLongShotsPerDay() {
+      const longActing1 = toNumber(document.getElementById("longActing1").value);
+      const longActing2 = toNumber(document.getElementById("longActing2").value);
+
+      let shots = 0;
+      if (longActing1 > 0) shots += 1;
+      if (longActing2 > 0) shots += 1;
       return shots;
     }
 
@@ -358,10 +382,6 @@
       document.getElementById("days").value = n;
     }
 
-    function hasValue(...values) {
-      return values.some(v => v > 0);
-    }
-
     function calculate() {
       const rapidMorning = toNumber(document.getElementById("rapidMorning").value);
       const rapidNoon = toNumber(document.getElementById("rapidNoon").value);
@@ -382,9 +402,9 @@
       const alcoholPerDay = toNumber(document.getElementById("alcoholPerDay").value);
 
       const errors = [
-        validateRangeOptional("速効型 朝", rapidMorning, 1, 200),
-        validateRangeOptional("速効型 昼", rapidNoon, 1, 200),
-        validateRangeOptional("速効型 夕", rapidEvening, 1, 200),
+        validateRangeOptional("即効型 朝", rapidMorning, 1, 200),
+        validateRangeOptional("即効型 昼", rapidNoon, 1, 200),
+        validateRangeOptional("即効型 夕", rapidEvening, 1, 200),
         validateRangeOptional("持効型 眠前1", longActing1, 1, 200),
         validateRangeOptional("持効型 眠前2", longActing2, 1, 200),
         validateRangeAllowZero("1日のインスリン施注回数", insulinShots, 0, 5),
@@ -399,6 +419,8 @@
 
       const rapidTotalPerDay = rapidMorning + rapidNoon + rapidEvening;
       const longTotalPerDay = longActing1 + longActing2;
+      const rapidShotsPerDay = calcRapidShotsPerDay();
+      const longShotsPerDay = calcLongShotsPerDay();
 
       let summary = "まとめ\n\n";
       let details = "--------------------\n\n計算根拠\n\n";
@@ -422,35 +444,49 @@
         details += `計算不可：${reasons.join("・")}を入力してください。\n\n`;
       }
 
-      // 速効型
+      // 即効型
       if (rapidTotalPerDay > 0 && days > 0 && rapidUnitPerPen > 0) {
-        const totalRapid = rapidTotalPerDay * days;
-        const rapidPens = ceilDiv(totalRapid, rapidUnitPerPen);
-        summary += `インスリン（速効型）：${rapidPens}本\n`;
-        details += `【インスリン（速効型）】\n`;
-        details += `1日総単位数：${rapidTotalPerDay}単位\n`;
-        details += `必要総単位数：${rapidTotalPerDay} × ${days} = ${totalRapid}単位\n`;
-        details += `本数：⌈${totalRapid} ÷ ${rapidUnitPerPen}⌉ = ${rapidPens}本\n`;
+        const rapidAirShotPerDay = rapidShotsPerDay * AIR_SHOT_UNITS_PER_INJECTION;
+        const totalRapidDose = rapidTotalPerDay * days;
+        const totalRapidAirShot = rapidAirShotPerDay * days;
+        const totalRapidRequired = totalRapidDose + totalRapidAirShot;
+        const rapidPens = ceilDiv(totalRapidRequired, rapidUnitPerPen);
+
+        summary += `インスリン（即効型）：${rapidPens}本\n`;
+        details += `【インスリン（即効型）】\n`;
+        details += `1日実投与単位数：${rapidTotalPerDay}単位\n`;
+        details += `1日空打ち単位数：${rapidShotsPerDay}回 × ${AIR_SHOT_UNITS_PER_INJECTION}単位 = ${rapidAirShotPerDay}単位\n`;
+        details += `必要総単位数：(${rapidTotalPerDay} + ${rapidAirShotPerDay}) × ${days} = ${totalRapidRequired}単位\n`;
+        details += `　実投与分：${totalRapidDose}単位\n`;
+        details += `　空打ち分：${totalRapidAirShot}単位\n`;
+        details += `本数：⌈${totalRapidRequired} ÷ ${rapidUnitPerPen}⌉ = ${rapidPens}本\n`;
         details += `内訳：朝 ${rapidMorning} / 昼 ${rapidNoon} / 夕 ${rapidEvening}\n\n`;
       } else {
         let reasons = [];
-        if (rapidTotalPerDay <= 0) reasons.push("速効型の単位数");
+        if (rapidTotalPerDay <= 0) reasons.push("即効型の単位数");
         if (days <= 0) reasons.push("処方日数");
-        if (rapidUnitPerPen <= 0) reasons.push("速効型1本あたり単位数");
-        summary += `インスリン（速効型）：-（${reasons.join("・")}を入力してください）\n`;
-        details += `【インスリン（速効型）】\n`;
+        if (rapidUnitPerPen <= 0) reasons.push("即効型1本あたり単位数");
+        summary += `インスリン（即効型）：-（${reasons.join("・")}を入力してください）\n`;
+        details += `【インスリン（即効型）】\n`;
         details += `計算不可：${reasons.join("・")}を入力してください。\n\n`;
       }
 
       // 持効型
       if (longTotalPerDay > 0 && days > 0 && longUnitPerPen > 0) {
-        const totalLong = longTotalPerDay * days;
-        const longPens = ceilDiv(totalLong, longUnitPerPen);
+        const longAirShotPerDay = longShotsPerDay * AIR_SHOT_UNITS_PER_INJECTION;
+        const totalLongDose = longTotalPerDay * days;
+        const totalLongAirShot = longAirShotPerDay * days;
+        const totalLongRequired = totalLongDose + totalLongAirShot;
+        const longPens = ceilDiv(totalLongRequired, longUnitPerPen);
+
         summary += `インスリン（持効型）：${longPens}本\n`;
         details += `【インスリン（持効型）】\n`;
-        details += `1日総単位数：${longTotalPerDay}単位\n`;
-        details += `必要総単位数：${longTotalPerDay} × ${days} = ${totalLong}単位\n`;
-        details += `本数：⌈${totalLong} ÷ ${longUnitPerPen}⌉ = ${longPens}本\n`;
+        details += `1日実投与単位数：${longTotalPerDay}単位\n`;
+        details += `1日空打ち単位数：${longShotsPerDay}回 × ${AIR_SHOT_UNITS_PER_INJECTION}単位 = ${longAirShotPerDay}単位\n`;
+        details += `必要総単位数：(${longTotalPerDay} + ${longAirShotPerDay}) × ${days} = ${totalLongRequired}単位\n`;
+        details += `　実投与分：${totalLongDose}単位\n`;
+        details += `　空打ち分：${totalLongAirShot}単位\n`;
+        details += `本数：⌈${totalLongRequired} ÷ ${longUnitPerPen}⌉ = ${longPens}本\n`;
         details += `内訳：眠前1 ${longActing1} / 眠前2 ${longActing2}\n\n`;
       } else {
         let reasons = [];
@@ -499,6 +535,7 @@
       }
 
       details += `【補足】\n`;
+      details += `空打ち設定：1回あたり ${AIR_SHOT_UNITS_PER_INJECTION}単位\n`;
       details += `自動計算されたインスリン施注回数：${calcAutoShots()}回\n`;
       details += `実際に計算に使用したインスリン施注回数：${insulinShots}回`;
 
