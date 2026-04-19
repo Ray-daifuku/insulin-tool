@@ -133,15 +133,15 @@
 
     <div class="grid-5">
       <div class="field">
-        <label for="rapidMorning">即効型 朝（単位）</label>
+        <label for="rapidMorning">速効型 朝（単位）</label>
         <input id="rapidMorning" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
-        <label for="rapidNoon">即効型 昼（単位）</label>
+        <label for="rapidNoon">速効型 昼（単位）</label>
         <input id="rapidNoon" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
-        <label for="rapidEvening">即効型 夕（単位）</label>
+        <label for="rapidEvening">速効型 夕（単位）</label>
         <input id="rapidEvening" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
@@ -178,7 +178,7 @@
     <h2>施設設定</h2>
     <div class="grid-3">
       <div class="field">
-        <label for="rapidUnitPerPen">即効型 1本あたり単位数</label>
+        <label for="rapidUnitPerPen">速効型 1本あたり単位数</label>
         <input id="rapidUnitPerPen" list="perPenList" inputmode="numeric" placeholder="例: 300">
       </div>
       <div class="field">
@@ -382,9 +382,9 @@
       const alcoholPerDay = toNumber(document.getElementById("alcoholPerDay").value);
 
       const errors = [
-        validateRangeOptional("即効型 朝", rapidMorning, 1, 200),
-        validateRangeOptional("即効型 昼", rapidNoon, 1, 200),
-        validateRangeOptional("即効型 夕", rapidEvening, 1, 200),
+        validateRangeOptional("速効型 朝", rapidMorning, 1, 200),
+        validateRangeOptional("速効型 昼", rapidNoon, 1, 200),
+        validateRangeOptional("速効型 夕", rapidEvening, 1, 200),
         validateRangeOptional("持効型 眠前1", longActing1, 1, 200),
         validateRangeOptional("持効型 眠前2", longActing2, 1, 200),
         validateRangeAllowZero("1日のインスリン施注回数", insulinShots, 0, 5),
@@ -422,23 +422,23 @@
         details += `計算不可：${reasons.join("・")}を入力してください。\n\n`;
       }
 
-      // 即効型
+      // 速効型
       if (rapidTotalPerDay > 0 && days > 0 && rapidUnitPerPen > 0) {
         const totalRapid = rapidTotalPerDay * days;
         const rapidPens = ceilDiv(totalRapid, rapidUnitPerPen);
-        summary += `インスリン（即効型）：${rapidPens}本\n`;
-        details += `【インスリン（即効型）】\n`;
+        summary += `インスリン（速効型）：${rapidPens}本\n`;
+        details += `【インスリン（速効型）】\n`;
         details += `1日総単位数：${rapidTotalPerDay}単位\n`;
         details += `必要総単位数：${rapidTotalPerDay} × ${days} = ${totalRapid}単位\n`;
         details += `本数：⌈${totalRapid} ÷ ${rapidUnitPerPen}⌉ = ${rapidPens}本\n`;
         details += `内訳：朝 ${rapidMorning} / 昼 ${rapidNoon} / 夕 ${rapidEvening}\n\n`;
       } else {
         let reasons = [];
-        if (rapidTotalPerDay <= 0) reasons.push("即効型の単位数");
+        if (rapidTotalPerDay <= 0) reasons.push("速効型の単位数");
         if (days <= 0) reasons.push("処方日数");
-        if (rapidUnitPerPen <= 0) reasons.push("即効型1本あたり単位数");
-        summary += `インスリン（即効型）：-（${reasons.join("・")}を入力してください）\n`;
-        details += `【インスリン（即効型）】\n`;
+        if (rapidUnitPerPen <= 0) reasons.push("速効型1本あたり単位数");
+        summary += `インスリン（速効型）：-（${reasons.join("・")}を入力してください）\n`;
+        details += `【インスリン（速効型）】\n`;
         details += `計算不可：${reasons.join("・")}を入力してください。\n\n`;
       }
 
