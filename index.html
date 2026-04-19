@@ -8,10 +8,11 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
       padding: 16px;
-      max-width: 760px;
+      max-width: 860px;
       margin: 0 auto;
       line-height: 1.6;
       background: #fafafa;
+      color: #111827;
     }
     h1 {
       font-size: 24px;
@@ -40,6 +41,11 @@
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
       gap: 12px;
     }
     .grid-5 {
@@ -106,8 +112,8 @@
       font-size: 13px;
       color: #555;
     }
-    @media (max-width: 640px) {
-      .grid, .grid-5, .button-row {
+    @media (max-width: 740px) {
+      .grid, .grid-3, .grid-5, .button-row {
         grid-template-columns: 1fr;
       }
     }
@@ -127,23 +133,23 @@
 
     <div class="grid-5">
       <div class="field">
-        <label for="rapidMorning">朝（単位）</label>
+        <label for="rapidMorning">即効型 朝（単位）</label>
         <input id="rapidMorning" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
-        <label for="rapidNoon">昼（単位）</label>
+        <label for="rapidNoon">即効型 昼（単位）</label>
         <input id="rapidNoon" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
-        <label for="rapidEvening">夕（単位）</label>
+        <label for="rapidEvening">即効型 夕（単位）</label>
         <input id="rapidEvening" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
-        <label for="longActing1">眠前 持効型1（単位）</label>
+        <label for="longActing1">持効型 眠前1（単位）</label>
         <input id="longActing1" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
       <div class="field">
-        <label for="longActing2">眠前 持効型2（単位）</label>
+        <label for="longActing2">持効型 眠前2（単位）</label>
         <input id="longActing2" list="units0to200" inputmode="numeric" placeholder="0">
       </div>
     </div>
@@ -164,16 +170,20 @@
       </div>
     </div>
     <div class="small">
-      施注回数は自動反映されますが、必要なら手入力で上書きできます。朝・昼・夕・眠前を変更すると再び自動計算に戻ります。
+      施注回数は自動反映されますが、必要なら手入力で上書きできます。インスリン欄を変更すると再び自動計算に戻ります。
     </div>
   </div>
 
   <div class="card">
     <h2>施設設定</h2>
-    <div class="grid">
+    <div class="grid-3">
       <div class="field">
-        <label for="unitPerPen">インスリン1本あたり単位数</label>
-        <input id="unitPerPen" list="unitPerPenList" inputmode="numeric" placeholder="例: 300">
+        <label for="rapidUnitPerPen">即効型 1本あたり単位数</label>
+        <input id="rapidUnitPerPen" list="perPenList" inputmode="numeric" placeholder="例: 300">
+      </div>
+      <div class="field">
+        <label for="longUnitPerPen">持効型 1本あたり単位数</label>
+        <input id="longUnitPerPen" list="perPenList" inputmode="numeric" placeholder="例: 300">
       </div>
       <div class="field">
         <label for="bgPerPack">血糖測定セット1袋あたりの数</label>
@@ -185,7 +195,7 @@
       </div>
       <div class="field">
         <label for="alcoholPerBag">アルコール綿1袋あたりの枚数</label>
-        <input id="alcoholPerBag" list="units1to200" inputmode="numeric" placeholder="例: 100">
+        <input id="alcoholPerBag" list="units1to500" inputmode="numeric" placeholder="例: 100">
       </div>
     </div>
   </div>
@@ -216,10 +226,11 @@
 
   <datalist id="units0to200"></datalist>
   <datalist id="units1to200"></datalist>
+  <datalist id="units1to500"></datalist>
   <datalist id="days1to100"></datalist>
   <datalist id="shots0to5"></datalist>
   <datalist id="checks0to4"></datalist>
-  <datalist id="unitPerPenList">
+  <datalist id="perPenList">
     <option value="300"></option>
     <option value="600"></option>
     <option value="900"></option>
@@ -228,7 +239,8 @@
 
   <script>
     const idsToPersist = [
-      "unitPerPen",
+      "rapidUnitPerPen",
+      "longUnitPerPen",
       "bgPerPack",
       "needlePerBox",
       "alcoholPerBag"
@@ -245,6 +257,7 @@
 
     generateDatalist("units0to200", 0, 200);
     generateDatalist("units1to200", 1, 200);
+    generateDatalist("units1to500", 1, 500);
     generateDatalist("days1to100", 1, 100);
     generateDatalist("shots0to5", 0, 5);
     generateDatalist("checks0to4", 0, 4);
@@ -289,7 +302,7 @@
       const insulinShots = toNumber(insulinShotsInput.value);
       const bgChecksPerDay = toNumber(document.getElementById("bgChecksPerDay").value);
       const alcoholPerDay = insulinShots + bgChecksPerDay;
-      document.getElementById("alcoholPerDay").value = alcoholPerDay > 0 ? alcoholPerDay : "0";
+      document.getElementById("alcoholPerDay").value = alcoholPerDay;
     }
 
     function saveValues() {
@@ -326,15 +339,15 @@
       });
     }
 
-    function validateRangeAllowZero(name, value, min, max) {
+    function validateRangeOptional(name, value, min, max) {
+      if (value === 0) return null;
       if (value < min || value > max) {
         return `${name}は${min}〜${max}の範囲で入力してください。`;
       }
       return null;
     }
 
-    function validateRangeOptional(name, value, min, max) {
-      if (value === 0) return null;
+    function validateRangeAllowZero(name, value, min, max) {
       if (value < min || value > max) {
         return `${name}は${min}〜${max}の範囲で入力してください。`;
       }
@@ -345,15 +358,23 @@
       document.getElementById("days").value = n;
     }
 
+    function hasValue(...values) {
+      return values.some(v => v > 0);
+    }
+
     function calculate() {
       const rapidMorning = toNumber(document.getElementById("rapidMorning").value);
       const rapidNoon = toNumber(document.getElementById("rapidNoon").value);
       const rapidEvening = toNumber(document.getElementById("rapidEvening").value);
       const longActing1 = toNumber(document.getElementById("longActing1").value);
       const longActing2 = toNumber(document.getElementById("longActing2").value);
+
       const insulinShots = toNumber(document.getElementById("insulinShots").value);
       const days = toNumber(document.getElementById("days").value);
-      const unitPerPen = toNumber(document.getElementById("unitPerPen").value);
+
+      const rapidUnitPerPen = toNumber(document.getElementById("rapidUnitPerPen").value);
+      const longUnitPerPen = toNumber(document.getElementById("longUnitPerPen").value);
+
       const bgChecksPerDay = toNumber(document.getElementById("bgChecksPerDay").value);
       const bgPerPack = toNumber(document.getElementById("bgPerPack").value);
       const needlePerBox = toNumber(document.getElementById("needlePerBox").value);
@@ -361,90 +382,127 @@
       const alcoholPerDay = toNumber(document.getElementById("alcoholPerDay").value);
 
       const errors = [
-        validateRangeOptional("朝", rapidMorning, 1, 200),
-        validateRangeOptional("昼", rapidNoon, 1, 200),
-        validateRangeOptional("夕", rapidEvening, 1, 200),
-        validateRangeOptional("眠前 持効型1", longActing1, 1, 200),
-        validateRangeOptional("眠前 持効型2", longActing2, 1, 200),
+        validateRangeOptional("即効型 朝", rapidMorning, 1, 200),
+        validateRangeOptional("即効型 昼", rapidNoon, 1, 200),
+        validateRangeOptional("即効型 夕", rapidEvening, 1, 200),
+        validateRangeOptional("持効型 眠前1", longActing1, 1, 200),
+        validateRangeOptional("持効型 眠前2", longActing2, 1, 200),
         validateRangeAllowZero("1日のインスリン施注回数", insulinShots, 0, 5),
         validateRangeOptional("処方日数", days, 1, 100),
         validateRangeAllowZero("1日の血糖測定回数", bgChecksPerDay, 0, 4)
       ].filter(Boolean);
-
-      if (days <= 0) errors.push("処方日数を入力してください。");
-      if (unitPerPen <= 0) errors.push("インスリン1本あたり単位数を入力してください。");
-      if (bgPerPack <= 0) errors.push("血糖測定セット1袋あたりの数を入力してください。");
-      if (needlePerBox <= 0) errors.push("針1箱あたりの本数を入力してください。");
-      if (alcoholPerBag <= 0) errors.push("アルコール綿1袋あたりの枚数を入力してください。");
-
-      const totalInsulinPerDay = rapidMorning + rapidNoon + rapidEvening + longActing1 + longActing2;
-      if (totalInsulinPerDay <= 0) {
-        errors.push("インスリン単位を少なくとも1か所入力してください。");
-      }
 
       if (errors.length > 0) {
         document.getElementById("result").textContent = "入力エラー\n\n" + errors.join("\n");
         return;
       }
 
-      const totalInsulinUnits = totalInsulinPerDay * days;
-      const insulinPens = ceilDiv(totalInsulinUnits, unitPerPen);
+      const rapidTotalPerDay = rapidMorning + rapidNoon + rapidEvening;
+      const longTotalPerDay = longActing1 + longActing2;
 
-      const totalNeedles = insulinShots * days;
-      const needleBoxes = ceilDiv(totalNeedles, needlePerBox);
+      let summary = "まとめ\n\n";
+      let details = "--------------------\n\n計算根拠\n\n";
 
-      const totalBgSets = bgChecksPerDay * days;
-      const bgPacks = ceilDiv(totalBgSets, bgPerPack);
+      // 針
+      if (insulinShots > 0 && days > 0 && needlePerBox > 0) {
+        const totalNeedles = insulinShots * days;
+        const needleBoxes = ceilDiv(totalNeedles, needlePerBox);
+        summary += `針：${needleBoxes}箱\n`;
+        details += `【針】\n`;
+        details += `1日のインスリン施注回数：${insulinShots}回\n`;
+        details += `必要総本数：${insulinShots} × ${days} = ${totalNeedles}本\n`;
+        details += `針箱数：⌈${totalNeedles} ÷ ${needlePerBox}⌉ = ${needleBoxes}箱\n\n`;
+      } else {
+        let reasons = [];
+        if (insulinShots <= 0) reasons.push("1日のインスリン施注回数");
+        if (days <= 0) reasons.push("処方日数");
+        if (needlePerBox <= 0) reasons.push("針1箱あたりの本数");
+        summary += `針：-（${reasons.join("・")}を入力してください）\n`;
+        details += `【針】\n`;
+        details += `計算不可：${reasons.join("・")}を入力してください。\n\n`;
+      }
 
-      const totalAlcohol = alcoholPerDay * days;
-      const alcoholBags = ceilDiv(totalAlcohol, alcoholPerBag);
+      // 即効型
+      if (rapidTotalPerDay > 0 && days > 0 && rapidUnitPerPen > 0) {
+        const totalRapid = rapidTotalPerDay * days;
+        const rapidPens = ceilDiv(totalRapid, rapidUnitPerPen);
+        summary += `インスリン（即効型）：${rapidPens}本\n`;
+        details += `【インスリン（即効型）】\n`;
+        details += `1日総単位数：${rapidTotalPerDay}単位\n`;
+        details += `必要総単位数：${rapidTotalPerDay} × ${days} = ${totalRapid}単位\n`;
+        details += `本数：⌈${totalRapid} ÷ ${rapidUnitPerPen}⌉ = ${rapidPens}本\n`;
+        details += `内訳：朝 ${rapidMorning} / 昼 ${rapidNoon} / 夕 ${rapidEvening}\n\n`;
+      } else {
+        let reasons = [];
+        if (rapidTotalPerDay <= 0) reasons.push("即効型の単位数");
+        if (days <= 0) reasons.push("処方日数");
+        if (rapidUnitPerPen <= 0) reasons.push("即効型1本あたり単位数");
+        summary += `インスリン（即効型）：-（${reasons.join("・")}を入力してください）\n`;
+        details += `【インスリン（即効型）】\n`;
+        details += `計算不可：${reasons.join("・")}を入力してください。\n\n`;
+      }
 
-      const autoShots = calcAutoShots();
+      // 持効型
+      if (longTotalPerDay > 0 && days > 0 && longUnitPerPen > 0) {
+        const totalLong = longTotalPerDay * days;
+        const longPens = ceilDiv(totalLong, longUnitPerPen);
+        summary += `インスリン（持効型）：${longPens}本\n`;
+        details += `【インスリン（持効型）】\n`;
+        details += `1日総単位数：${longTotalPerDay}単位\n`;
+        details += `必要総単位数：${longTotalPerDay} × ${days} = ${totalLong}単位\n`;
+        details += `本数：⌈${totalLong} ÷ ${longUnitPerPen}⌉ = ${longPens}本\n`;
+        details += `内訳：眠前1 ${longActing1} / 眠前2 ${longActing2}\n\n`;
+      } else {
+        let reasons = [];
+        if (longTotalPerDay <= 0) reasons.push("持効型の単位数");
+        if (days <= 0) reasons.push("処方日数");
+        if (longUnitPerPen <= 0) reasons.push("持効型1本あたり単位数");
+        summary += `インスリン（持効型）：-（${reasons.join("・")}を入力してください）\n`;
+        details += `【インスリン（持効型）】\n`;
+        details += `計算不可：${reasons.join("・")}を入力してください。\n\n`;
+      }
 
-      const resultText =
-`まとめ
+      // 血糖測定セット
+      if (days > 0 && bgPerPack > 0) {
+        const totalBgSets = bgChecksPerDay * days;
+        const bgPacks = ceilDiv(totalBgSets, bgPerPack);
+        summary += `血糖測定セット：${bgPacks}袋\n`;
+        details += `【血糖測定セット】\n`;
+        details += `1日の血糖測定回数：${bgChecksPerDay}回\n`;
+        details += `必要総数：${bgChecksPerDay} × ${days} = ${totalBgSets}回分\n`;
+        details += `袋数：⌈${totalBgSets} ÷ ${bgPerPack}⌉ = ${bgPacks}袋\n\n`;
+      } else {
+        let reasons = [];
+        if (days <= 0) reasons.push("処方日数");
+        if (bgPerPack <= 0) reasons.push("血糖測定セット1袋あたりの数");
+        summary += `血糖測定セット：-（${reasons.join("・")}を入力してください）\n`;
+        details += `【血糖測定セット】\n`;
+        details += `計算不可：${reasons.join("・")}を入力してください。\n\n`;
+      }
 
-インスリン：${insulinPens}本
-針：${needleBoxes}箱
-血糖測定セット：${bgPacks}袋
-アルコール綿：${alcoholBags}袋
+      // アルコール綿
+      if (days > 0 && alcoholPerBag > 0) {
+        const totalAlcohol = alcoholPerDay * days;
+        const alcoholBags = ceilDiv(totalAlcohol, alcoholPerBag);
+        summary += `アルコール綿：${alcoholBags}袋\n`;
+        details += `【アルコール綿】\n`;
+        details += `1日使用枚数：${alcoholPerDay}枚\n`;
+        details += `必要総枚数：${alcoholPerDay} × ${days} = ${totalAlcohol}枚\n`;
+        details += `袋数：⌈${totalAlcohol} ÷ ${alcoholPerBag}⌉ = ${alcoholBags}袋\n\n`;
+      } else {
+        let reasons = [];
+        if (days <= 0) reasons.push("処方日数");
+        if (alcoholPerBag <= 0) reasons.push("アルコール綿1袋あたりの枚数");
+        summary += `アルコール綿：-（${reasons.join("・")}を入力してください）\n`;
+        details += `【アルコール綿】\n`;
+        details += `計算不可：${reasons.join("・")}を入力してください。\n\n`;
+      }
 
---------------------
+      details += `【補足】\n`;
+      details += `自動計算されたインスリン施注回数：${calcAutoShots()}回\n`;
+      details += `実際に計算に使用したインスリン施注回数：${insulinShots}回`;
 
-計算根拠
-
-【インスリン】
-1日総単位数：${totalInsulinPerDay}単位
-必要総単位数：${totalInsulinPerDay} × ${days} = ${totalInsulinUnits}単位
-インスリン本数：⌈${totalInsulinUnits} ÷ ${unitPerPen}⌉ = ${insulinPens}本
-
-【針】
-1日のインスリン施注回数：${insulinShots}回
-必要総本数：${insulinShots} × ${days} = ${totalNeedles}本
-針箱数：⌈${totalNeedles} ÷ ${needlePerBox}⌉ = ${needleBoxes}箱
-
-【血糖測定セット】
-1日の血糖測定回数：${bgChecksPerDay}回
-必要総数：${bgChecksPerDay} × ${days} = ${totalBgSets}回分
-血糖測定セット袋数：⌈${totalBgSets} ÷ ${bgPerPack}⌉ = ${bgPacks}袋
-
-【アルコール綿】
-1日使用枚数：${alcoholPerDay}枚
-必要総枚数：${alcoholPerDay} × ${days} = ${totalAlcohol}枚
-アルコール綿袋数：⌈${totalAlcohol} ÷ ${alcoholPerBag}⌉ = ${alcoholBags}袋
-
-【内訳】
-朝：${rapidMorning}単位
-昼：${rapidNoon}単位
-夕：${rapidEvening}単位
-眠前 持効型1：${longActing1}単位
-眠前 持効型2：${longActing2}単位
-
-【補足】
-自動計算されたインスリン施注回数：${autoShots}回
-実際に計算に使用したインスリン施注回数：${insulinShots}回`;
-
-      document.getElementById("result").textContent = resultText;
+      document.getElementById("result").textContent = summary + "\n\n" + details;
       saveValues();
     }
 
@@ -482,7 +540,8 @@
       updateAutoFields(false);
     });
 
-    document.getElementById("unitPerPen").addEventListener("input", saveValues);
+    document.getElementById("rapidUnitPerPen").addEventListener("input", saveValues);
+    document.getElementById("longUnitPerPen").addEventListener("input", saveValues);
     document.getElementById("bgPerPack").addEventListener("input", saveValues);
     document.getElementById("needlePerBox").addEventListener("input", saveValues);
     document.getElementById("alcoholPerBag").addEventListener("input", saveValues);
